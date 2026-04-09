@@ -44,7 +44,7 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: 390px 1fr;
+      grid-template-columns: 410px 1fr;
       gap: 20px;
     }
     .card {
@@ -309,7 +309,7 @@
     }
     .subject-grid {
       display: grid;
-      grid-template-columns: 1.1fr 1fr 1fr;
+      grid-template-columns: 1.1fr 0.9fr 0.9fr 0.8fr;
       gap: 8px;
       align-items: center;
     }
@@ -323,6 +323,39 @@
       font-weight: 700;
       font-size: 14px;
       padding-right: 6px;
+    }
+    .weight-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 10px;
+    }
+    .mini-btn {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+    .check-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+    .check-row span {
+      font-size: 14px;
+      font-weight: 700;
     }
     .calc-box {
       margin-top: 10px;
@@ -367,6 +400,8 @@
     @media (max-width: 960px) {
       .grid { grid-template-columns: 1fr; }
       .axis { height: 620px; }
+      .subject-grid { grid-template-columns: 1fr 1fr; }
+      .subject-grid .head:nth-child(3), .subject-grid .head:nth-child(4) { display: none; }
     }
   </style>
 </head>
@@ -375,7 +410,8 @@
     <h1>NSW Selective 2021 Estimator</h1>
     <div class="sub">
       You can either enter a final <strong>score percentage</strong> directly, or enter the
-      <strong>total marks and your marks for each of the 4 subjects</strong>. The page will calculate the percentage and place you on the axis.
+      <strong>total marks, your marks, and subject weights</strong> for the 4 subjects.
+      Default weight is <strong>25%</strong> for each subject. If you tick the checkbox, the calculator will ignore weights and use equal averaging across 4 subjects.
     </div>
 
     <div class="grid">
@@ -383,7 +419,7 @@
         <div class="section-title" style="margin-top:0;">Input method</div>
         <div class="mode-box">
           <button class="mode-btn active" id="directModeBtn">Direct percentage</button>
-          <button class="mode-btn" id="subjectModeBtn">4 subjects</button>
+          <button class="mode-btn" id="subjectModeBtn">4 subjects + weights</button>
         </div>
 
         <div id="directModeBox">
@@ -395,33 +431,49 @@
         </div>
 
         <div id="subjectModeBox" style="display:none;">
-          <div class="pill">Enter total and achieved marks</div>
+          <div class="pill">Enter total marks, your marks, and weights</div>
+          <div class="weight-tools">
+            <button class="mini-btn" id="setEqualWeights">Set all weights to 25%</button>
+          </div>
+
+          <label class="check-row">
+            <input id="ignoreWeights" type="checkbox" />
+            <span>Ignore weights and use equal average across 4 subjects</span>
+          </label>
+
           <div class="subject-grid">
             <div class="head">Subject</div>
             <div class="head">Total marks</div>
             <div class="head">Your marks</div>
+            <div class="head">Weight %</div>
 
             <div class="subject-name">Reading</div>
             <input id="readingTotal" type="number" min="0" step="0.1" value="25" />
             <input id="readingScore" type="number" min="0" step="0.1" value="18" />
+            <input id="readingWeight" type="number" min="0" step="0.1" value="25" />
 
             <div class="subject-name">Maths</div>
             <input id="mathsTotal" type="number" min="0" step="0.1" value="25" />
             <input id="mathsScore" type="number" min="0" step="0.1" value="18" />
+            <input id="mathsWeight" type="number" min="0" step="0.1" value="25" />
 
             <div class="subject-name">Thinking Skills</div>
-            <input id="thinkingTotal" type="number" min="0" step="0.1" value="35" />
-            <input id="thinkingScore" type="number" min="0" step="0.1" value="25" />
+            <input id="thinkingTotal" type="number" min="0" step="0.1" value="25" />
+            <input id="thinkingScore" type="number" min="0" step="0.1" value="18" />
+            <input id="thinkingWeight" type="number" min="0" step="0.1" value="25" />
 
             <div class="subject-name">Writing</div>
-            <input id="writingTotal" type="number" min="0" step="0.1" value="15" />
-            <input id="writingScore" type="number" min="0" step="0.1" value="11" />
+            <input id="writingTotal" type="number" min="0" step="0.1" value="25" />
+            <input id="writingScore" type="number" min="0" step="0.1" value="18" />
+            <input id="writingWeight" type="number" min="0" step="0.1" value="25" />
           </div>
 
           <div class="calc-box">
             <div class="calc-row"><span>Total possible marks</span><strong id="calcTotalMarks">100.0</strong></div>
             <div class="calc-row"><span>Your total marks</span><strong id="calcYourMarks">72.0</strong></div>
-            <div class="calc-row"><span>Calculated percentage</span><strong id="calcPct">72.0%</strong></div>
+            <div class="calc-row"><span>Total weight</span><strong id="calcTotalWeight">100.0%</strong></div>
+            <div class="calc-row"><span>Calculation mode</span><strong id="calcModeText">Weighted average</strong></div>
+            <div class="calc-row"><span>Final percentage</span><strong id="calcPct">72.0%</strong></div>
           </div>
           <div id="subjectError" class="error"></div>
         </div>
@@ -443,7 +495,7 @@
         <div class="section-title">How this works</div>
         <div class="note">
           Green = already below your score. Orange = slightly above your score. Blue = the closest lines around your score.
-          The chart uses 2021 estimated school cutoffs converted to percentages.
+          In subject mode, the checkbox lets you switch between weighted calculation and equal averaging.
         </div>
       </div>
 
@@ -532,17 +584,21 @@
     const subjectModeBtn = document.getElementById("subjectModeBtn");
     const directModeBox = document.getElementById("directModeBox");
     const subjectModeBox = document.getElementById("subjectModeBox");
+    const setEqualWeights = document.getElementById("setEqualWeights");
+    const ignoreWeights = document.getElementById("ignoreWeights");
 
     const calcTotalMarks = document.getElementById("calcTotalMarks");
     const calcYourMarks = document.getElementById("calcYourMarks");
+    const calcTotalWeight = document.getElementById("calcTotalWeight");
+    const calcModeText = document.getElementById("calcModeText");
     const calcPct = document.getElementById("calcPct");
     const subjectError = document.getElementById("subjectError");
 
     const subjectFields = [
-      ["readingTotal", "readingScore"],
-      ["mathsTotal", "mathsScore"],
-      ["thinkingTotal", "thinkingScore"],
-      ["writingTotal", "writingScore"]
+      ["readingTotal", "readingScore", "readingWeight"],
+      ["mathsTotal", "mathsScore", "mathsWeight"],
+      ["thinkingTotal", "thinkingScore", "thinkingWeight"],
+      ["writingTotal", "writingScore", "writingWeight"]
     ];
 
     const minPct = 58;
@@ -691,29 +747,52 @@
     function getSubjectPct() {
       let totalMarks = 0;
       let yourMarks = 0;
+      let totalWeight = 0;
+      let weightedSum = 0;
+      let subjectPctSum = 0;
+      let validSubjects = 0;
       let error = "";
 
-      subjectFields.forEach(([totalId, scoreId]) => {
+      subjectFields.forEach(([totalId, scoreId, weightId]) => {
         const total = parseFloat(document.getElementById(totalId).value) || 0;
         const score = parseFloat(document.getElementById(scoreId).value) || 0;
+        const weight = parseFloat(document.getElementById(weightId).value) || 0;
+
         totalMarks += total;
         yourMarks += score;
-        if (total < 0 || score < 0) error = "Marks cannot be negative.";
+        totalWeight += weight;
+
+        if (total < 0 || score < 0 || weight < 0) error = "Values cannot be negative.";
         if (score > total && total > 0) error = "Your marks cannot be greater than total marks.";
+
+        const subjectPct = total > 0 ? (score / total) * 100 : 0;
+        if (total > 0) {
+          subjectPctSum += subjectPct;
+          validSubjects += 1;
+        }
+        weightedSum += subjectPct * weight;
       });
 
       if (totalMarks <= 0) error = "Total marks must be greater than 0.";
+      if (!ignoreWeights.checked && totalWeight <= 0) error = "Total weight must be greater than 0.";
 
       calcTotalMarks.textContent = totalMarks.toFixed(1);
       calcYourMarks.textContent = yourMarks.toFixed(1);
+      calcTotalWeight.textContent = `${totalWeight.toFixed(1)}%`;
 
-      let pct = totalMarks > 0 ? (yourMarks / totalMarks) * 100 : 0;
+      let pct = 0;
+      if (ignoreWeights.checked) {
+        pct = validSubjects > 0 ? subjectPctSum / validSubjects : 0;
+        calcModeText.textContent = "Equal average (weights ignored)";
+      } else {
+        pct = totalWeight > 0 ? weightedSum / totalWeight : 0;
+        calcModeText.textContent = "Weighted average";
+      }
+
       calcPct.textContent = `${pct.toFixed(1)}%`;
       subjectError.textContent = error;
 
-      if (error) {
-        return 72.0;
-      }
+      if (error) return 72.0;
       return pct;
     }
 
@@ -721,7 +800,19 @@
       return inputMode === "direct" ? getDirectPct() : getSubjectPct();
     }
 
+    function updateWeightInputsState() {
+      const disabled = ignoreWeights.checked;
+      ["readingWeight","mathsWeight","thinkingWeight","writingWeight"].forEach(id => {
+        document.getElementById(id).disabled = disabled;
+        document.getElementById(id).style.background = disabled ? "#f3f4f6" : "#fff";
+      });
+      setEqualWeights.disabled = disabled;
+      setEqualWeights.style.opacity = disabled ? "0.5" : "1";
+      setEqualWeights.style.cursor = disabled ? "not-allowed" : "pointer";
+    }
+
     function update() {
+      updateWeightInputsState();
       let userPct = getCurrentPct();
       scoreDisplay.textContent = `${userPct.toFixed(1)}%`;
 
@@ -776,18 +867,30 @@
       scoreSlider.value = scoreInput.value;
       if (inputMode === "direct") update();
     });
+
     scoreSlider.addEventListener("input", () => {
       scoreInput.value = scoreSlider.value;
       if (inputMode === "direct") update();
     });
 
-    subjectFields.forEach(([totalId, scoreId]) => {
-      document.getElementById(totalId).addEventListener("input", () => {
-        if (inputMode === "subject") update();
+    subjectFields.forEach(([totalId, scoreId, weightId]) => {
+      [totalId, scoreId, weightId].forEach(id => {
+        document.getElementById(id).addEventListener("input", () => {
+          if (inputMode === "subject") update();
+        });
       });
-      document.getElementById(scoreId).addEventListener("input", () => {
-        if (inputMode === "subject") update();
+    });
+
+    ignoreWeights.addEventListener("change", () => {
+      if (inputMode === "subject") update();
+    });
+
+    setEqualWeights.addEventListener("click", () => {
+      if (ignoreWeights.checked) return;
+      ["readingWeight","mathsWeight","thinkingWeight","writingWeight"].forEach(id => {
+        document.getElementById(id).value = "25";
       });
+      if (inputMode === "subject") update();
     });
 
     directModeBtn.addEventListener("click", () => switchMode("direct"));
