@@ -1,0 +1,819 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSW Selective 2021 School Estimator</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --accent: #2563eb;
+      --accent-soft: rgba(37,99,235,0.15);
+      --good: #059669;
+      --good-soft: rgba(5,150,105,0.14);
+      --warn: #d97706;
+      --warn-soft: rgba(217,119,6,0.14);
+      --user: #dc2626;
+      --soft: #eef2ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+    }
+    .sub {
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      outline: none;
+      background: #fff;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin-top: 14px;
+    }
+    .big {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 14px 0 4px;
+    }
+    .hint, .note {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 18px 0 10px;
+    }
+    .pill {
+      display: inline-block;
+      background: var(--soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .item {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    .item .name {
+      font-weight: 700;
+    }
+    .item .meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .good { border-left: 5px solid var(--good); }
+    .warn { border-left: 5px solid var(--warn); }
+    .axis-wrap {
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+    .axis {
+      position: relative;
+      min-width: 1000px;
+      height: 620px;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      background:
+        linear-gradient(to right, transparent 0%, transparent 100%),
+        repeating-linear-gradient(
+          to right,
+          rgba(107,114,128,0.12) 0px,
+          rgba(107,114,128,0.12) 1px,
+          transparent 1px,
+          transparent 48px
+        );
+    }
+    .axis-baseline {
+      position: absolute;
+      left: 60px;
+      right: 40px;
+      bottom: 86px;
+      height: 3px;
+      background: #111827;
+    }
+    .tick {
+      position: absolute;
+      bottom: 74px;
+      width: 1px;
+      height: 18px;
+      background: #111827;
+    }
+    .tick-label {
+      position: absolute;
+      bottom: 40px;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .school-line {
+      position: absolute;
+      bottom: 86px;
+      width: 2px;
+      background: rgba(37,99,235,0.30);
+      transform: translateX(-50%);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .school-line.reachable {
+      background: var(--good);
+      width: 3px;
+      z-index: 2;
+    }
+    .school-line.stretch {
+      background: var(--warn);
+      width: 3px;
+      z-index: 2;
+    }
+    .school-line.closest {
+      background: var(--accent);
+      width: 4px;
+      z-index: 3;
+    }
+    .school-line:hover {
+      background: #111827;
+      width: 4px;
+      z-index: 5;
+    }
+    .school-label {
+      position: absolute;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #111827;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid #dbe2ea;
+      padding: 6px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      z-index: 6;
+      max-width: 210px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .school-label.reachable { background: var(--good-soft); border-color: rgba(5,150,105,0.3); }
+    .school-label.stretch { background: var(--warn-soft); border-color: rgba(217,119,6,0.3); }
+    .school-label.closest { background: var(--accent-soft); border-color: rgba(37,99,235,0.3); }
+    .user-line {
+      position: absolute;
+      bottom: 86px;
+      width: 4px;
+      background: var(--user);
+      transform: translateX(-50%);
+      z-index: 4;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.7);
+    }
+    .user-label {
+      position: absolute;
+      transform: translateX(-50%);
+      bottom: 560px;
+      background: var(--user);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 7;
+      white-space: nowrap;
+    }
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(17,24,39,0.92);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.15s ease;
+      z-index: 10;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 8px;
+      vertical-align: -1px;
+      border-radius: 2px;
+    }
+    .l-school::before { background: rgba(37,99,235,0.3); }
+    .l-reach::before { background: var(--good); }
+    .l-stretch::before { background: var(--warn); }
+    .l-user::before { background: var(--user); }
+    .toggle-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 10px 0 2px;
+    }
+    .chip {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip.active {
+      background: var(--soft);
+      color: var(--accent);
+      border-color: rgba(37,99,235,0.35);
+      font-weight: 700;
+    }
+    .mode-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .mode-btn {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: var(--soft);
+      border-color: rgba(37,99,235,0.35);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .subject-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .subject-grid .head {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      padding: 2px 2px 6px;
+    }
+    .subject-name {
+      font-weight: 700;
+      font-size: 14px;
+      padding-right: 6px;
+    }
+    .calc-box {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    .error {
+      color: #b91c1c;
+      font-size: 13px;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+    }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+      .axis { height: 620px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NSW Selective 2021 Estimator</h1>
+    <div class="sub">
+      You can either enter a final <strong>score percentage</strong> directly, or enter the
+      <strong>total marks and your marks for each of the 4 subjects</strong>. The page will calculate the percentage and place you on the axis.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-title" style="margin-top:0;">Input method</div>
+        <div class="mode-box">
+          <button class="mode-btn active" id="directModeBtn">Direct percentage</button>
+          <button class="mode-btn" id="subjectModeBtn">4 subjects</button>
+        </div>
+
+        <div id="directModeBox">
+          <div class="pill">Input in percentage only</div>
+          <label for="scoreInput">Your score percentage (%)</label>
+          <input id="scoreInput" type="number" min="50" max="90" step="0.1" value="72.0" />
+          <input id="scoreSlider" type="range" min="50" max="90" step="0.1" value="72.0" />
+          <div class="hint">Example: 72.0 means 72% of the total score.</div>
+        </div>
+
+        <div id="subjectModeBox" style="display:none;">
+          <div class="pill">Enter total and achieved marks</div>
+          <div class="subject-grid">
+            <div class="head">Subject</div>
+            <div class="head">Total marks</div>
+            <div class="head">Your marks</div>
+
+            <div class="subject-name">Reading</div>
+            <input id="readingTotal" type="number" min="0" step="0.1" value="25" />
+            <input id="readingScore" type="number" min="0" step="0.1" value="18" />
+
+            <div class="subject-name">Maths</div>
+            <input id="mathsTotal" type="number" min="0" step="0.1" value="25" />
+            <input id="mathsScore" type="number" min="0" step="0.1" value="18" />
+
+            <div class="subject-name">Thinking Skills</div>
+            <input id="thinkingTotal" type="number" min="0" step="0.1" value="35" />
+            <input id="thinkingScore" type="number" min="0" step="0.1" value="25" />
+
+            <div class="subject-name">Writing</div>
+            <input id="writingTotal" type="number" min="0" step="0.1" value="15" />
+            <input id="writingScore" type="number" min="0" step="0.1" value="11" />
+          </div>
+
+          <div class="calc-box">
+            <div class="calc-row"><span>Total possible marks</span><strong id="calcTotalMarks">100.0</strong></div>
+            <div class="calc-row"><span>Your total marks</span><strong id="calcYourMarks">72.0</strong></div>
+            <div class="calc-row"><span>Calculated percentage</span><strong id="calcPct">72.0%</strong></div>
+          </div>
+          <div id="subjectError" class="error"></div>
+        </div>
+
+        <div class="big" id="scoreDisplay">72.0%</div>
+
+        <div class="section-title">Estimated result</div>
+        <div id="summary" class="note"></div>
+
+        <div class="section-title">Likely within range</div>
+        <div id="reachableList" class="list"></div>
+
+        <div class="section-title">Stretch range</div>
+        <div id="stretchList" class="list"></div>
+
+        <div class="section-title">Closest schools</div>
+        <div id="closestList" class="list"></div>
+
+        <div class="section-title">How this works</div>
+        <div class="note">
+          Green = already below your score. Orange = slightly above your score. Blue = the closest lines around your score.
+          The chart uses 2021 estimated school cutoffs converted to percentages.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <button class="chip active" id="modeRelevant">Show relevant labels only</button>
+          <button class="chip" id="modeAll">Show more labels</button>
+        </div>
+        <div class="axis-wrap">
+          <div class="axis" id="axis">
+            <div class="axis-baseline"></div>
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+        </div>
+        <div class="legend">
+          <span class="l-school">Other school lines</span>
+          <span class="l-reach">Within estimated range</span>
+          <span class="l-stretch">Stretch range</span>
+          <span class="l-user">Your score</span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>School</th>
+              <th>Estimated 2021 cutoff</th>
+              <th>Status for your score</th>
+            </tr>
+          </thead>
+          <tbody id="schoolTable"></tbody>
+        </table>
+        <div class="small">
+          This is a visual estimate based on commonly circulated 2021 cutoffs, not an official NSW placement predictor.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const schools = [
+      {name: "James Ruse Agricultural High School", pct: 82.7},
+      {name: "Baulkham Hills High School", pct: 77.7},
+      {name: "North Sydney Boys High School", pct: 76.0},
+      {name: "Hornsby Girls High School", pct: 73.7},
+      {name: "Girraween High School", pct: 73.3},
+      {name: "North Sydney Girls High School", pct: 73.3},
+      {name: "Sydney Boys High School", pct: 73.3},
+      {name: "Normanhurst Boys High School", pct: 72.3},
+      {name: "Fort Street High School", pct: 72.0},
+      {name: "Sydney Girls High School", pct: 71.7},
+      {name: "Chatswood High School", pct: 71.3},
+      {name: "Penrith High School", pct: 69.7},
+      {name: "Northern Beaches Secondary College Manly Campus", pct: 69.3},
+      {name: "Parramatta High School", pct: 68.0},
+      {name: "Hurlstone Agricultural High School", pct: 67.3},
+      {name: "St George Girls High School", pct: 67.0},
+      {name: "Ryde Secondary College", pct: 66.0},
+      {name: "Sydney Technical High School", pct: 66.0},
+      {name: "Caringbah High School", pct: 64.7},
+      {name: "Blacktown Girls High School", pct: 64.0},
+      {name: "Blacktown Boys High School", pct: 63.7},
+      {name: "Tempe High School", pct: 63.0},
+      {name: "Sefton High School", pct: 62.7},
+      {name: "Gosford High School", pct: 62.3},
+      {name: "Sydney Secondary College Leichhardt Campus", pct: 62.3},
+      {name: "Merewether High School", pct: 61.3},
+      {name: "Smiths Hill High School", pct: 61.3},
+      {name: "Prairiewood High School", pct: 60.3},
+      {name: "Sydney Secondary College Balmain Campus", pct: 60.3}
+    ];
+
+    const axis = document.getElementById("axis");
+    const tooltip = document.getElementById("tooltip");
+    const scoreInput = document.getElementById("scoreInput");
+    const scoreSlider = document.getElementById("scoreSlider");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const summary = document.getElementById("summary");
+    const reachableList = document.getElementById("reachableList");
+    const stretchList = document.getElementById("stretchList");
+    const closestList = document.getElementById("closestList");
+    const schoolTable = document.getElementById("schoolTable");
+    const modeRelevant = document.getElementById("modeRelevant");
+    const modeAll = document.getElementById("modeAll");
+
+    const directModeBtn = document.getElementById("directModeBtn");
+    const subjectModeBtn = document.getElementById("subjectModeBtn");
+    const directModeBox = document.getElementById("directModeBox");
+    const subjectModeBox = document.getElementById("subjectModeBox");
+
+    const calcTotalMarks = document.getElementById("calcTotalMarks");
+    const calcYourMarks = document.getElementById("calcYourMarks");
+    const calcPct = document.getElementById("calcPct");
+    const subjectError = document.getElementById("subjectError");
+
+    const subjectFields = [
+      ["readingTotal", "readingScore"],
+      ["mathsTotal", "mathsScore"],
+      ["thinkingTotal", "thinkingScore"],
+      ["writingTotal", "writingScore"]
+    ];
+
+    const minPct = 58;
+    const maxPct = 85;
+    let showMoreLabels = false;
+    let inputMode = "direct";
+
+    function xPos(pct) {
+      const left = 60;
+      const right = 40;
+      const usable = axis.clientWidth - left - right;
+      return left + ((pct - minPct) / (maxPct - minPct)) * usable;
+    }
+
+    function makeTicks() {
+      document.querySelectorAll(".tick, .tick-label").forEach(el => el.remove());
+      for (let p = 58; p <= 85; p += 2) {
+        const tick = document.createElement("div");
+        tick.className = "tick";
+        tick.style.left = `${xPos(p)}px`;
+        axis.appendChild(tick);
+
+        const label = document.createElement("div");
+        label.className = "tick-label";
+        label.style.left = `${xPos(p)}px`;
+        label.textContent = `${p}%`;
+        axis.appendChild(label);
+      }
+    }
+
+    function renderList(container, items, className, formatter) {
+      container.innerHTML = "";
+      if (!items.length) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `<div class="meta">No schools in this band.</div>`;
+        container.appendChild(div);
+        return;
+      }
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = `item ${className || ""}`;
+        div.innerHTML = formatter(item);
+        container.appendChild(div);
+      });
+    }
+
+    function attachTooltip(el, text) {
+      el.addEventListener("mouseenter", () => {
+        tooltip.textContent = text;
+        tooltip.style.opacity = "1";
+      });
+      el.addEventListener("mousemove", (e) => {
+        const rect = axis.getBoundingClientRect();
+        tooltip.style.left = `${e.clientX - rect.left}px`;
+        tooltip.style.top = `${e.clientY - rect.top - 8}px`;
+      });
+      el.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+      });
+    }
+
+    function chooseLabels(sorted, reachable, stretch, closest) {
+      const keep = new Map();
+      [...closest, ...stretch, ...reachable.slice(0, 5)].forEach(s => keep.set(s.name, s));
+      if (showMoreLabels) {
+        sorted.forEach((s, i) => {
+          if (i % 2 === 0) keep.set(s.name, s);
+        });
+      }
+      return [...keep.values()].sort((a,b) => b.pct - a.pct);
+    }
+
+    function layoutLabels(labeled) {
+      const rows = [150, 190, 230, 270, 310, 350];
+      const placed = [];
+      return labeled.map((s, idx) => {
+        const x = xPos(s.pct);
+        let chosenRow = rows[idx % rows.length];
+        for (const row of rows) {
+          const clash = placed.some(p => p.row === row && Math.abs(p.x - x) < 90);
+          if (!clash) {
+            chosenRow = row;
+            break;
+          }
+        }
+        placed.push({x, row: chosenRow});
+        return {...s, x, row: chosenRow};
+      });
+    }
+
+    function drawSchools(userPct, reachable, stretch, closest) {
+      document.querySelectorAll(".school-line, .school-label, .user-line, .user-label").forEach(el => el.remove());
+      const sorted = [...schools].sort((a, b) => b.pct - a.pct);
+      const closestNames = new Set(closest.map(s => s.name));
+      const stretchNames = new Set(stretch.map(s => s.name));
+      const reachableNames = new Set(reachable.map(s => s.name));
+
+      sorted.forEach((s, i) => {
+        const line = document.createElement("div");
+        line.className = "school-line";
+        if (closestNames.has(s.name)) line.classList.add("closest");
+        else if (stretchNames.has(s.name)) line.classList.add("stretch");
+        else if (reachableNames.has(s.name)) line.classList.add("reachable");
+        line.style.left = `${xPos(s.pct)}px`;
+        line.style.height = `${220 + (i % 4) * 40}px`;
+        axis.appendChild(line);
+        attachTooltip(line, `${s.name} — ${s.pct.toFixed(1)}%`);
+      });
+
+      const labels = layoutLabels(chooseLabels(sorted, reachable, stretch, closest));
+      labels.forEach(s => {
+        const label = document.createElement("div");
+        label.className = "school-label";
+        if (closestNames.has(s.name)) label.classList.add("closest");
+        else if (stretchNames.has(s.name)) label.classList.add("stretch");
+        else if (reachableNames.has(s.name)) label.classList.add("reachable");
+        label.style.left = `${s.x}px`;
+        label.style.bottom = `${s.row + 86}px`;
+        label.textContent = `${s.name} (${s.pct.toFixed(1)}%)`;
+        axis.appendChild(label);
+      });
+
+      const uline = document.createElement("div");
+      uline.className = "user-line";
+      uline.style.left = `${xPos(userPct)}px`;
+      uline.style.height = "470px";
+      axis.appendChild(uline);
+
+      const ulabel = document.createElement("div");
+      ulabel.className = "user-label";
+      ulabel.style.left = `${xPos(userPct)}px`;
+      ulabel.textContent = `You: ${userPct.toFixed(1)}%`;
+      axis.appendChild(ulabel);
+    }
+
+    function getDirectPct() {
+      let userPct = parseFloat(scoreInput.value);
+      if (isNaN(userPct)) userPct = 72.0;
+      userPct = Math.max(50, Math.min(90, userPct));
+      scoreInput.value = userPct.toFixed(1);
+      scoreSlider.value = userPct.toFixed(1);
+      return userPct;
+    }
+
+    function getSubjectPct() {
+      let totalMarks = 0;
+      let yourMarks = 0;
+      let error = "";
+
+      subjectFields.forEach(([totalId, scoreId]) => {
+        const total = parseFloat(document.getElementById(totalId).value) || 0;
+        const score = parseFloat(document.getElementById(scoreId).value) || 0;
+        totalMarks += total;
+        yourMarks += score;
+        if (total < 0 || score < 0) error = "Marks cannot be negative.";
+        if (score > total && total > 0) error = "Your marks cannot be greater than total marks.";
+      });
+
+      if (totalMarks <= 0) error = "Total marks must be greater than 0.";
+
+      calcTotalMarks.textContent = totalMarks.toFixed(1);
+      calcYourMarks.textContent = yourMarks.toFixed(1);
+
+      let pct = totalMarks > 0 ? (yourMarks / totalMarks) * 100 : 0;
+      calcPct.textContent = `${pct.toFixed(1)}%`;
+      subjectError.textContent = error;
+
+      if (error) {
+        return 72.0;
+      }
+      return pct;
+    }
+
+    function getCurrentPct() {
+      return inputMode === "direct" ? getDirectPct() : getSubjectPct();
+    }
+
+    function update() {
+      let userPct = getCurrentPct();
+      scoreDisplay.textContent = `${userPct.toFixed(1)}%`;
+
+      const reachable = schools.filter(s => userPct >= s.pct).sort((a, b) => b.pct - a.pct);
+      const stretch = schools.filter(s => userPct < s.pct && s.pct - userPct <= 1.5).sort((a, b) => a.pct - b.pct);
+      const closest = [...schools].map(s => ({...s, gap: Math.abs(s.pct - userPct)})).sort((a, b) => a.gap - b.gap).slice(0, 5);
+
+      drawSchools(userPct, reachable, stretch, closest);
+
+      let highestReach = reachable.length ? reachable[0].name : "No listed school cutoff reached yet";
+      summary.innerHTML = `
+        Your current working percentage is <strong>${userPct.toFixed(1)}%</strong>.<br>
+        Highest estimated reachable school on this chart: <strong>${highestReach}</strong>.<br>
+        Only the most relevant school labels are shown on the axis to keep it readable.
+      `;
+
+      renderList(reachableList, reachable.slice(0, 12), "good",
+        s => `<div class="name">${s.name}</div><div class="meta">Estimated cutoff: ${s.pct.toFixed(1)}%</div>`);
+
+      renderList(stretchList, stretch, "warn",
+        s => `<div class="name">${s.name}</div><div class="meta">Estimated cutoff: ${s.pct.toFixed(1)}% &nbsp;|&nbsp; gap: ${(s.pct - userPct).toFixed(1)}%</div>`);
+
+      renderList(closestList, closest, "",
+        s => `<div class="name">${s.name}</div><div class="meta">Estimated cutoff: ${s.pct.toFixed(1)}% &nbsp;|&nbsp; distance: ${s.gap.toFixed(1)}%</div>`);
+
+      schoolTable.innerHTML = "";
+      [...schools].sort((a,b) => b.pct - a.pct).forEach(s => {
+        const tr = document.createElement("tr");
+        let status = "Below estimated cutoff";
+        if (userPct >= s.pct) status = "Within estimated range";
+        else if (s.pct - userPct <= 1.5) status = "Stretch range";
+        tr.innerHTML = `
+          <td>${s.name}</td>
+          <td>${s.pct.toFixed(1)}%</td>
+          <td>${status}</td>
+        `;
+        schoolTable.appendChild(tr);
+      });
+    }
+
+    function switchMode(mode) {
+      inputMode = mode;
+      const directActive = mode === "direct";
+      directModeBtn.classList.toggle("active", directActive);
+      subjectModeBtn.classList.toggle("active", !directActive);
+      directModeBox.style.display = directActive ? "block" : "none";
+      subjectModeBox.style.display = directActive ? "none" : "block";
+      update();
+    }
+
+    scoreInput.addEventListener("input", () => {
+      scoreSlider.value = scoreInput.value;
+      if (inputMode === "direct") update();
+    });
+    scoreSlider.addEventListener("input", () => {
+      scoreInput.value = scoreSlider.value;
+      if (inputMode === "direct") update();
+    });
+
+    subjectFields.forEach(([totalId, scoreId]) => {
+      document.getElementById(totalId).addEventListener("input", () => {
+        if (inputMode === "subject") update();
+      });
+      document.getElementById(scoreId).addEventListener("input", () => {
+        if (inputMode === "subject") update();
+      });
+    });
+
+    directModeBtn.addEventListener("click", () => switchMode("direct"));
+    subjectModeBtn.addEventListener("click", () => switchMode("subject"));
+
+    modeRelevant.addEventListener("click", () => {
+      showMoreLabels = false;
+      modeRelevant.classList.add("active");
+      modeAll.classList.remove("active");
+      update();
+    });
+
+    modeAll.addEventListener("click", () => {
+      showMoreLabels = true;
+      modeAll.classList.add("active");
+      modeRelevant.classList.remove("active");
+      update();
+    });
+
+    window.addEventListener("resize", () => {
+      makeTicks();
+      update();
+    });
+
+    makeTicks();
+    update();
+  </script>
+</body>
+</html>
